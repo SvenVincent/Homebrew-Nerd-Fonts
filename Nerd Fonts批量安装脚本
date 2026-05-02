@@ -1,0 +1,369 @@
+#!/bin/bash
+
+# Nerd Fonts批量安装脚本（优化版）
+# 功能：支持序号显示、指定安装、批量安装、跳过已安装字体
+# 作者：SvenVincent
+# 日期：2026-05-02
+
+# 颜色定义
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+MAGENTA='\033[0;35m'
+NC='\033[0m' # No Color
+
+# 字体列表（带序号）
+declare -A FONTS_MAP=(
+    [1]="font-0xproto-nerd-font"
+    [2]="font-3270-nerd-font"
+    [3]="font-adwaitamono-nerd-font"
+    [4]="font-agave-nerd-font"
+    [5]="font-anonymicepro-nerd-font"
+    [6]="font-arimo-nerd-font"
+    [7]="font-atkynsonmono-nerd-font"
+    [8]="font-aurulentsansm-nerd-font"
+    [9]="font-bigblueterm-nerd-font"
+    [10]="font-bitstromwera-nerd-font"
+    [11]="font-blexmono-nerd-font"
+    [12]="font-caskaydiacove-nerd-font"
+    [13]="font-caskaydiamono-nerd-font"
+    [14]="font-codenewroman-nerd-font"
+    [15]="font-comicshannsmono-nerd-font"
+    [16]="font-commitmono-nerd-font"
+    [17]="font-cousine-nerd-font"
+    [18]="font-d2codingligature-nerd-font"
+    [19]="font-daddytimemono-nerd-font"
+    [20]="font-dejavusansm-nerd-font"
+    [21]="font-departuremono-nerd-font"
+    [22]="font-droidsansm-nerd-font"
+    [23]="font-envycoder-nerd-font"
+    [24]="font-fantasquesansm-nerd-font"
+    [25]="font-firacode-nerd-font"
+    [26]="font-firamono-nerd-font"
+    [27]="font-geistmono-nerd-font"
+    [28]="font-gomono-nerd-font"
+    [29]="font-gohufont-nerd-font"
+    [30]="font-hack-nerd-font"
+    [31]="font-hasklug-nerd-font"
+    [32]="font-heavydata-nerd-font"
+    [33]="font-hurmit-nerd-font"
+    [34]="font-imwriting-nerd-font"
+    [35]="font-inconsolata-nerd-font"
+    [36]="font-inconsolatago-nerd-font"
+    [37]="font-inconsolata-lgc-nerd-font"
+    [38]="font-intonemono-nerd-font"
+    [39]="font-iosevka-nerd-font"
+    [40]="font-iosevkaterm-nerd-font"
+    [41]="font-iosevkatermslab-nerd-font"
+    [42]="font-jetbrainsmono-nerd-font"
+    [43]="font-lekton-nerd-font"
+    [44]="font-literationmono-nerd-font"
+    [45]="font-lilex-nerd-font"
+    [46]="font-martianmono-nerd-font"
+    [47]="font-meslolg-nerd-font"
+    [48]="font-monaspice-nerd-font"
+    [49]="font-monofur-nerd-font"
+    [50]="font-monoid-nerd-font"
+    [51]="font-mononoki-nerd-font"
+    [52]="font-m+-nerd-font"
+    [53]="font-noto-nerd-font"
+    [54]="font-opendyslexic-nerd-font"
+    [55]="font-overpass-nerd-font"
+    [56]="font-profont-nerd-font"
+    [57]="font-proggyclean-nerd-font"
+    [58]="font-recmono-nerd-font"
+    [59]="font-robotomono-nerd-font"
+    [60]="font-shuretechmono-nerd-font"
+    [61]="font-saucecodepro-nerd-font"
+    [62]="font-spacemono-nerd-font"
+    [63]="font-symbols-nerd-font"
+    [64]="font-terminess-nerd-font"
+    [65]="font-tinos-nerd-font"
+    [66]="font-ubuntu-nerd-font"
+    [67]="font-ubuntumono-nerd-font"
+    [68]="font-ubuntusans-nerd-font"
+    [69]="font-victormono-nerd-font"
+    [70]="font-zedmono-nerd-font"
+)
+
+# 函数：显示帮助信息
+show_help() {
+    echo -e "${CYAN}========================================${NC}"
+    echo -e "${CYAN}    Nerd Fonts批量安装脚本 - 帮助${NC}"
+    echo -e "${CYAN}========================================${NC}"
+    echo ""
+    echo -e "${YELLOW}使用方法:${NC}"
+    echo -e "  $0 [选项]"
+    echo ""
+    echo -e "${YELLOW}选项:${NC}"
+    echo -e "  -h, --help         显示此帮助信息"
+    echo -e "  -l, --list         显示所有可用字体列表"
+    echo -e "  -i, --install      安装指定序号的字体（多个用逗号分隔）"
+    echo -e "  -a, --all          安装所有字体（默认）"
+    echo ""
+    echo -e "${YELLOW}示例:${NC}"
+    echo -e "  $0                  # 安装所有字体"
+    echo -e "  $0 -l               # 显示字体列表"
+    echo -e "  $0 -i 25            # 安装序号25的字体（FiraCode）"
+    echo -e "  $0 -i 25,42,30      # 安装多个字体"
+    echo -e "  $0 -i 1-10          # 安装序号1到10的字体"
+    echo -e "  $0 -i 25,42-45,30   # 混合安装"
+    echo ""
+}
+
+# 函数：显示字体列表
+show_font_list() {
+    echo -e "${CYAN}========================================${NC}"
+    echo -e "${CYAN}    可用Nerd Fonts字体列表${NC}"
+    echo -e "${CYAN}========================================${NC}"
+    echo ""
+    
+    for i in {1..70}; do
+        if [ -n "${FONTS_MAP[$i]}" ]; then
+            font_name=$(echo "${FONTS_MAP[$i]}" | sed 's/font-//; s/-nerd-font//')
+            if [ $((i % 2)) -eq 0 ]; then
+                echo -e "${BLUE}[$(printf "%2d" $i)]${NC} $font_name"
+            else
+                echo -e "${MAGENTA}[$(printf "%2d" $i)]${NC} $font_name"
+            fi
+        fi
+    done
+    
+    echo ""
+    echo -e "${YELLOW}总字体数: 70${NC}"
+    echo ""
+}
+
+# 函数：检查字体是否已安装
+check_font_installed() {
+    local font_name=$1
+    if brew list --cask 2>/dev/null | grep -q "^${font_name}$"; then
+        return 0  # 已安装
+    else
+        return 1  # 未安装
+    fi
+}
+
+# 函数：安装单个字体
+install_font() {
+    local font_name=$1
+    local display_name=$(echo "$font_name" | sed 's/font-//; s/-nerd-font//')
+    
+    echo -e "${BLUE}[INFO]${NC} 正在安装: ${CYAN}${display_name}${NC}"
+    
+    if brew install --cask "$font_name" 2>/dev/null; then
+        echo -e "${GREEN}[SUCCESS]${NC} 安装成功: ${CYAN}${display_name}${NC}"
+        return 0
+    else
+        echo -e "${RED}[ERROR]${NC} 安装失败: ${CYAN}${display_name}${NC}"
+        return 1
+    fi
+}
+
+# 函数：解析安装参数
+parse_install_args() {
+    local args=$1
+    local -n result_array=$2
+    
+    # 清除数组
+    result_array=()
+    
+    # 处理逗号分隔的参数
+    IFS=',' read -ra parts <<< "$args"
+    
+    for part in "${parts[@]}"; do
+        # 检查是否是范围（例如 1-10）
+        if [[ "$part" =~ ^([0-9]+)-([0-9]+)$ ]]; then
+            start=${BASH_REMATCH[1]}
+            end=${BASH_REMATCH[2]}
+            
+            if [ "$start" -le "$end" ] && [ "$start" -ge 1 ] && [ "$end" -le 70 ]; then
+                for ((i=start; i<=end; i++)); do
+                    result_array+=("$i")
+                done
+            else
+                echo -e "${RED}[ERROR]${NC} 无效的范围: $part"
+                return 1
+            fi
+        # 检查是否是单个数字
+        elif [[ "$part" =~ ^[0-9]+$ ]]; then
+            if [ "$part" -ge 1 ] && [ "$part" -le 70 ]; then
+                result_array+=("$part")
+            else
+                echo -e "${RED}[ERROR]${NC} 无效的序号: $part (有效范围: 1-70)"
+                return 1
+            fi
+        else
+            echo -e "${RED}[ERROR]${NC} 无效的参数格式: $part"
+            return 1
+        fi
+    done
+    
+    # 去重
+    IFS=$'\n' result_array=($(sort -un <<< "${result_array[*]}"))
+    unset IFS
+    
+    return 0
+}
+
+# 主函数
+main() {
+    local install_all=true
+    local show_list=false
+    local install_args=""
+    
+    # 解析命令行参数
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            -h|--help)
+                show_help
+                exit 0
+                ;;
+            -l|--list)
+                show_list=true
+                shift
+                ;;
+            -i|--install)
+                install_all=false
+                if [ -n "$2" ] && [[ ! "$2" =~ ^- ]]; then
+                    install_args="$2"
+                    shift 2
+                else
+                    echo -e "${RED}[ERROR]${NC} -i 参数需要指定安装序号"
+                    exit 1
+                fi
+                ;;
+            -a|--all)
+                install_all=true
+                shift
+                ;;
+            *)
+                echo -e "${RED}[ERROR]${NC} 未知参数: $1"
+                show_help
+                exit 1
+                ;;
+        esac
+    done
+    
+    # 显示列表
+    if [ "$show_list" = true ]; then
+        show_font_list
+        exit 0
+    fi
+    
+    # 检查Homebrew是否安装
+    if ! command -v brew &> /dev/null; then
+        echo -e "${RED}[ERROR]${NC} Homebrew未安装，请先安装Homebrew"
+        echo "安装命令: /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
+        exit 1
+    fi
+    
+    # 确定要安装的字体序号
+    local font_indices=()
+    
+    if [ "$install_all" = true ]; then
+        # 安装所有字体
+        font_indices=($(seq 1 70))
+        echo -e "${CYAN}========================================${NC}"
+        echo -e "${CYAN}    开始安装所有Nerd Fonts字体${NC}"
+        echo -e "${CYAN}========================================${NC}"
+        echo ""
+    else
+        # 安装指定字体
+        if ! parse_install_args "$install_args" font_indices; then
+            exit 1
+        fi
+        
+        echo -e "${CYAN}========================================${NC}"
+        echo -e "${CYAN}    开始安装指定Nerd Fonts字体${NC}"
+        echo -e "${CYAN}========================================${NC}"
+        echo ""
+        echo -e "${YELLOW}选择的字体:${NC}"
+        for idx in "${font_indices[@]}"; do
+            font_name=$(echo "${FONTS_MAP[$idx]}" | sed 's/font-//; s/-nerd-font//')
+            echo -e "  [${BLUE}$idx${NC}] ${CYAN}$font_name${NC}"
+        done
+        echo ""
+    fi
+    
+    # 统计变量
+    local total_fonts=${#font_indices[@]}
+    local installed_count=0
+    local installed_new=0
+    local failed_count=0
+    local skipped_fonts=()
+    local installed_fonts=()
+    local failed_fonts=()
+    
+    # 遍历要安装的字体
+    for idx in "${font_indices[@]}"; do
+        font_package="${FONTS_MAP[$idx]}"
+        display_name=$(echo "$font_package" | sed 's/font-//; s/-nerd-font//')
+        
+        if check_font_installed "$font_package"; then
+            echo -e "${YELLOW}[SKIP]${NC} 已安装: ${CYAN}${display_name}${NC}"
+            skipped_fonts+=("$font_package")
+            ((installed_count++))
+        else
+            echo -e "${BLUE}[INSTALL]${NC} 需要安装: ${CYAN}${display_name}${NC}"
+            if install_font "$font_package"; then
+                installed_fonts+=("$font_package")
+                ((installed_count++))
+                ((installed_new++))
+            else
+                failed_fonts+=("$font_package")
+                ((failed_count++))
+            fi
+        fi
+        echo ""
+    done
+    
+    # 输出统计结果
+    echo -e "${CYAN}========================================${NC}"
+    echo -e "${CYAN}           安装完成统计${NC}"
+    echo -e "${CYAN}========================================${NC}"
+    echo -e "${GREEN}✓${NC} 总字体数: ${total_fonts}"
+    echo -e "${GREEN}✓${NC} 已安装字体数: ${installed_count}/${total_fonts}"
+    echo -e "${GREEN}✓${NC} 本次新安装: ${installed_new}"
+    echo -e "${YELLOW}⚠${NC} 跳过已安装: $((installed_count - installed_new))"
+    echo -e "${RED}✗${NC} 安装失败: ${failed_count}"
+    echo ""
+    
+    # 输出详细结果
+    if [ ${#skipped_fonts[@]} -gt 0 ]; then
+        echo -e "${YELLOW}[已跳过的字体]${NC}"
+        for font in "${skipped_fonts[@]}"; do
+            name=$(echo "$font" | sed 's/font-//; s/-nerd-font//')
+            echo -e "  ${YELLOW}✓${NC} ${name}"
+        done
+        echo ""
+    fi
+    
+    if [ ${#installed_fonts[@]} -gt 0 ]; then
+        echo -e "${GREEN}[本次新安装的字体]${NC}"
+        for font in "${installed_fonts[@]}"; do
+            name=$(echo "$font" | sed 's/font-//; s/-nerd-font//')
+            echo -e "  ${GREEN}✓${NC} ${name}"
+        done
+        echo ""
+    fi
+    
+    if [ ${#failed_fonts[@]} -gt 0 ]; then
+        echo -e "${RED}[安装失败的字体]${NC}"
+        for font in "${failed_fonts[@]}"; do
+            name=$(echo "$font" | sed 's/font-//; s/-nerd-font//')
+            echo -e "  ${RED}✗${NC} ${name}"
+        done
+        echo ""
+        echo -e "${YELLOW}[提示] 失败的字体可能需要手动安装或检查网络连接${NC}"
+    fi
+    
+    echo -e "${CYAN}========================================${NC}"
+    echo -e "${GREEN}脚本执行完成！${NC}"
+    echo -e "${CYAN}========================================${NC}"
+}
+
+# 执行主函数
+main "$@"
